@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -9,12 +10,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	configure "ordering_service/internal/config"
+	"time"
 )
 
 type DynamoDB struct {
-	DB                *dynamodb.Client
-	OrderTableName    string
-	MenuItemTableName string
+	DB                 *dynamodb.Client
+	OrderTableName     string
+	OrderItemTableName string
 }
 
 func InitDynamoDB() (*DynamoDB, error) {
@@ -44,9 +46,9 @@ func InitDynamoDB() (*DynamoDB, error) {
 	}
 	// Create DynamoDB client
 	newDbInstance := &DynamoDB{
-		DB:                dynamodb.NewFromConfig(awsConfig),
-		OrderTableName:    "orders",
-		MenuItemTableName: "menu_items",
+		DB:                 dynamodb.NewFromConfig(awsConfig),
+		OrderTableName:     "orders",
+		OrderItemTableName: "menu_items",
 	}
 	if err := newDbInstance.createOrderTable(); err != nil {
 		return nil, fmt.Errorf("failed to create table: %w", err)
@@ -75,13 +77,13 @@ func (d *DynamoDB) createOrderTable() error {
 		TableName: &d.OrderTableName,
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
-				AttributeName: aws.String("Id"),
+				AttributeName: aws.String("id"),
 				AttributeType: types.ScalarAttributeTypeS,
 			},
 		},
 		KeySchema: []types.KeySchemaElement{
 			{
-				AttributeName: aws.String("Id"),
+				AttributeName: aws.String("id"),
 				KeyType:       types.KeyTypeHash,
 			},
 		},
@@ -97,12 +99,19 @@ func (d *DynamoDB) createOrderTable() error {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 
+	// Wait for the table to become active
+	waiter := dynamodb.NewTableExistsWaiter(d.DB)
+	err = waiter.Wait(context.TODO(), &dynamodb.DescribeTableInput{TableName: aws.String(d.OrderTableName)}, 5*time.Minute)
+	if err != nil {
+		return fmt.Errorf("failed to wait for table to become active: %w", err)
+	}
+
 	return nil
 }
 
 func (d *DynamoDB) CreateMenuItemTable() error {
 	// Check if the table already exists
-	exists, err := d.doesTableExists(d.MenuItemTableName)
+	exists, err := d.doesTableExists(d.OrderItemTableName)
 	if err != nil {
 		return fmt.Errorf("failed to check if menu item table exists: %w", err)
 	}
@@ -114,7 +123,7 @@ func (d *DynamoDB) CreateMenuItemTable() error {
 
 	// Define the table schema
 	input := &dynamodb.CreateTableInput{
-		TableName: &d.MenuItemTableName,
+		TableName: &d.OrderItemTableName,
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String("Id"),
@@ -139,29 +148,29 @@ func (d *DynamoDB) CreateMenuItemTable() error {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 
+	// Wait for the table to become active
+	waiter := dynamodb.NewTableExistsWaiter(d.DB)
+	err = waiter.Wait(context.TODO(), &dynamodb.DescribeTableInput{TableName: aws.String(d.OrderItemTableName)}, 5*time.Minute)
+	if err != nil {
+		return fmt.Errorf("failed to wait for table to become active: %w", err)
+	}
+
 	return nil
 }
 
 func (d *DynamoDB) doesTableExists(tableName string) (bool, error) {
-
-	input := &dynamodb.ListTablesInput{}
-	for {
-		result, err := d.DB.ListTables(context.TODO(), input)
-		if err != nil {
-			return false, fmt.Errorf("failed to list tables: %w", err)
-		}
-
-		for _, name := range result.TableNames {
-			if name == tableName {
-				return true, nil
-			}
-		}
-
-		if result.LastEvaluatedTableName == nil {
-			break
-		}
-		input.ExclusiveStartTableName = result.LastEvaluatedTableName
+	input := &dynamodb.DescribeTableInput{
+		TableName: aws.String(tableName),
 	}
 
-	return false, nil
+	_, err := d.DB.DescribeTable(context.TODO(), input)
+	if err != nil {
+		var notFoundErr *types.ResourceNotFoundException
+		if errors.As(err, &notFoundErr) {
+			return false, nil // Table does not exist
+		}
+		return false, fmt.Errorf("failed to describe table: %w", err)
+	}
+
+	return true, nil // Table exists
 }
