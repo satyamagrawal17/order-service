@@ -7,14 +7,14 @@ option go_package = "./order";
 import "google/protobuf/timestamp.proto";
 
 message OrderItem {
-  string id = 3;
-  string restaurant_id = 4;
+  uint32 menu_item_id = 3;
+  uint32 restaurant_id = 4;
   int32 quantity = 5;
 }
 
 message Order {
   uint32 id = 1;
-  string user_id = 2;
+  uint32 user_id = 2;
   string status = 3;
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp updated_at = 5;
@@ -22,7 +22,7 @@ message Order {
 }
 
 message CreateOrderRequest {
-  string user_id = 1;
+  uint32 user_id = 1;
   repeated OrderItem order_items = 2;
 }
 
@@ -48,7 +48,7 @@ message UpdateOrderRequest {
 }
 
 message GetOrderByUserIdRequest {
-  string user_id = 1;
+  uint32 user_id = 1;
 }
 
 service OrderService {

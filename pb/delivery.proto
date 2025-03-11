@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package delivery;
+
+option go_package = ".;delivery";
+
+message AssignDeliveryRequest {
+  uint32 order_id = 1;
+  uint32 restaurant_id = 2;
+}
+
+message UpdateDeliveryStatusRequest {
+  uint32 delivery_id = 1;
+  string delivery_status = 2;
+}
+
+message Delivery {
+  uint32 id = 1;
+  uint32 order_id = 2;
+  uint32 rider_id = 3;
+  string status = 4;
+}
+
+message AssignDeliveryResponse {
+  Delivery delivery = 1;
+}
+
+message UpdateDeliveryStatusResponse {
+  Delivery delivery = 1;
+}
+
+service DeliveryService {
+  rpc AssignDelivery(AssignDeliveryRequest) returns (AssignDeliveryResponse);
+  rpc UpdateDeliveryStatus(UpdateDeliveryStatusRequest) returns (UpdateDeliveryStatusResponse);
+}
