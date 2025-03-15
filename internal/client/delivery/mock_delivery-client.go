@@ -2,7 +2,7 @@
 // Source: internal/client/delivery-client.go
 
 // Package client is a generated GoMock package.
-package client
+package delivery
 
 import (
 	delivery "ordering_service/pb/delivery"

@@ -4,7 +4,8 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
-	"ordering_service/internal/client"
+	"ordering_service/internal/client/catalog"
+	"ordering_service/internal/client/delivery"
 	"ordering_service/internal/database"
 	"ordering_service/internal/repository"
 	"ordering_service/internal/server"
@@ -19,9 +20,13 @@ func Start() {
 	}
 
 	orderRepository := repository.NewOrderRepository(dbEngine)
-	deliveryService, connection := client.NewDeliveryServiceClient()
+	deliveryService, connection := delivery.NewDeliveryServiceClient()
+	restaurantService, restConnection := catalog.NewRestaurantServiceClient()
+	itemService, itemConnection := catalog.NewItemServiceClient()
 	defer connection.Close()
-	orderService := service.NewOrderService(orderRepository, deliveryService)
+	defer restConnection.Close()
+	defer itemConnection.Close()
+	orderService := service.NewOrderService(orderRepository, deliveryService, restaurantService, itemService)
 	grpcServer := server.NewGRPCServer(orderService)
 
 	s := grpc.NewServer()

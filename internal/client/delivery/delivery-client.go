@@ -1,4 +1,4 @@
-package client
+package delivery
 
 import "ordering_service/pb/delivery"
 

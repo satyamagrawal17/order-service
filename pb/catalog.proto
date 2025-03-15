@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package catalog;
+
+import "google/protobuf/empty.proto";
+option go_package = ".;catalog";
+
+message MenuItem {
+  uint64 id = 1;
+  uint64 restaurant_id = 2;
+  string name = 3;
+  double price = 4;
+  int64 stock = 5;
+}
+
+message Address {
+  string street = 1;
+  string city = 2;
+  string state = 3;
+  string postal_code = 4;
+  double longitude = 5;
+  double latitude = 6;
+}
+
+message Restaurant {
+  uint64 id = 1;
+  string name = 2;
+  Address address = 3;
+  uint64 owner_id = 4;
+  repeated MenuItem menu_items = 5;
+}
+
+message CreateRestaurantRequest {
+  string name = 1;
+  Address address = 2;
+
+}
+
+message GetRestaurantsResponse {
+  repeated Restaurant restaurants = 1;
+}
+
+message GetRestaurantByIdRequest {
+  uint64 id = 1;
+}
+
+message CreateItemRequest {
+  uint64 restaurant_id = 1;
+  string name = 2;
+  double price = 3;
+  uint32 stock = 4;
+}
+
+message GetItemsByRestaurantIdRequest {
+  uint64 restaurant_id = 1;
+}
+
+message GetItemsByRestaurantIdResponse {
+  repeated MenuItem menu_items = 1;
+}
+message GetItemByIdRequest {
+  uint64 menu_item_id = 1;
+}
+
+
+service RestaurantService {
+  rpc CreateRestaurant(CreateRestaurantRequest) returns(Restaurant);
+  rpc GetRestaurants(google.protobuf.Empty) returns (GetRestaurantsResponse);
+  rpc GetRestaurantById(GetRestaurantByIdRequest) returns (Restaurant);
+}
+
+service ItemService {
+  rpc CreateItem(CreateItemRequest) returns (MenuItem);
+  rpc GetItemsByRestaurantId(GetItemsByRestaurantIdRequest) returns (GetItemsByRestaurantIdResponse);
+  rpc GetItemById(GetItemByIdRequest) returns (MenuItem);
+}
+
