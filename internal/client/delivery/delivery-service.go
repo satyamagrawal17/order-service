@@ -17,7 +17,7 @@ type DeliveryServiceClient struct {
 
 func NewDeliveryServiceClient() (DeliveryServiceClientInterface, *grpc.ClientConn) {
 	DELIVERY_SERVICE_URL := "localhost:50052"
-	ctx, _ := context.WithTimeout(context.Background(), time.Minute)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
 
 	connection, err := grpc.NewClient(DELIVERY_SERVICE_URL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 

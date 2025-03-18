@@ -17,8 +17,9 @@ message UpdateDeliveryStatusRequest {
 message Delivery {
   uint32 id = 1;
   uint32 order_id = 2;
-  uint32 rider_id = 3;
-  string status = 4;
+  uint64 restaurant_id = 3;
+  uint32 rider_id = 4;
+  string status = 5;
 }
 
 message AssignDeliveryResponse {

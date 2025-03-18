@@ -18,6 +18,6 @@ type OrderItem struct {
 	MenuItemId   uint32
 	RestaurantId uint32
 	Quantity     int
-	CreatedAt    time.Time `gorm:"autoCreateTime:false"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime:false"`
+	CreatedAt    time.Time `gorm:"autoCreateTime:true"`
+	UpdatedAt    time.Time `gorm:"autoUpdateTime:true"`
 }

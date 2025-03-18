@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"ordering_service/internal/dto"
 	"ordering_service/internal/service"
 	"ordering_service/pb/order"
@@ -17,21 +19,22 @@ func NewGRPCServer(orderService *service.OrderService) *GRPCServer {
 }
 
 func (s *GRPCServer) CreateOrder(ctx context.Context, req *order.CreateOrderRequest) (*order.CreateOrderResponse, error) {
-
 	menuItemList := []dto.MenuItemRequest{}
 	for _, requestOrderItem := range req.OrderItems {
 		menuItemList = append(menuItemList, dto.MenuItemRequest{
 			MenuItemId:   requestOrderItem.MenuItemId,
-			RestaurantId: requestOrderItem.MenuItemId,
+			RestaurantId: requestOrderItem.RestaurantId,
 			Quantity:     int(requestOrderItem.Quantity),
 		})
 	}
 
-	createdOrder := s.orderService.CreateOrder(dto.CreateOrderRequest{
+	createdOrder, err := s.orderService.CreateOrder(dto.CreateOrderRequest{
 		UserId:       req.UserId,
 		MenuItemList: menuItemList,
 	})
-
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Some error occured: ", err.Error())
+	}
 	convertedOrderItems := []*order.OrderItem{}
 	for _, orderItem := range createdOrder.OrderItems {
 		convertedOrderItems = append(convertedOrderItems, &order.OrderItem{

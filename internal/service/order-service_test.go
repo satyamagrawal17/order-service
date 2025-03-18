@@ -36,7 +36,7 @@ func TestOrderService_CreateOrder(t *testing.T) {
 	mockOrderRepo.EXPECT().Create(gomock.Any()).Times(1)
 	mockDeliveryService.EXPECT().AssignDelivery(gomock.Any()).Return(&delivery.AssignDeliveryResponse{}, nil).Times(1)
 
-	order := orderService.CreateOrder(createOrderRequest)
+	order, _ := orderService.CreateOrder(createOrderRequest)
 	if order.UserId != createOrderRequest.UserId {
 		t.Errorf("expected userId %v, got %v", createOrderRequest.UserId, order.UserId)
 	}
@@ -64,13 +64,10 @@ func TestOrderService_CreateOrder_EmptyMenuItemList(t *testing.T) {
 		MenuItemList: []dto.MenuItemRequest{},
 	}
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("expected panic, got none")
-		}
-	}()
-
-	orderService.CreateOrder(createOrderRequest)
+	_, err := orderService.CreateOrder(createOrderRequest)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	}
 }
 
 func TestOrderService_GetOrderById_NonExistentOrder(t *testing.T) {

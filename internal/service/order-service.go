@@ -1,6 +1,11 @@
 package service
 
 import (
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	//"log"
+	//"net/http"
 	catalog2 "ordering_service/internal/client/catalog"
 	delivery2 "ordering_service/internal/client/delivery"
 	"ordering_service/internal/dto"
@@ -9,6 +14,8 @@ import (
 	"ordering_service/pb/catalog"
 	"ordering_service/pb/delivery"
 )
+
+// Define custom error types
 
 type OrderService struct {
 	repository        repository.IOrderRepository
@@ -26,10 +33,10 @@ func NewOrderService(orderRepository repository.IOrderRepository, deliveryServic
 	}
 }
 
-func (orderService *OrderService) CreateOrder(createOrderQuery dto.CreateOrderRequest) *model.Order {
+func (orderService *OrderService) CreateOrder(createOrderQuery dto.CreateOrderRequest) (*model.Order, error) {
 
 	if len(createOrderQuery.MenuItemList) == 0 {
-		panic("Atleast one menu item is required to place order")
+		return nil, status.Errorf(codes.InvalidArgument, "menu item list is empty")
 	}
 
 	order := &model.Order{
@@ -41,19 +48,19 @@ func (orderService *OrderService) CreateOrder(createOrderQuery dto.CreateOrderRe
 			Id: uint64(menuItem.RestaurantId),
 		})
 		if err != nil {
-			panic(err)
+			return nil, status.Errorf(codes.Internal, "failed to get restaurant by id: %v", err)
 		}
 		if savedRestaurant == nil {
-			panic("Restaurant not found")
+			return nil, status.Errorf(codes.NotFound, "restaurant not found: %v", err)
 		}
 		savedItem, err := orderService.itemService.GetItemById(&catalog.GetItemByIdRequest{
 			MenuItemId: uint64(menuItem.MenuItemId),
 		})
 		if err != nil {
-			panic(err)
+			return nil, status.Errorf(codes.Internal, "failed to get item by id: %v", err)
 		}
 		if savedItem == nil {
-			panic("Item not found")
+			return nil, status.Errorf(codes.NotFound, "item not found: %v", err)
 		}
 	}
 	menuItemsToCreate := []model.OrderItem{}
@@ -74,7 +81,7 @@ func (orderService *OrderService) CreateOrder(createOrderQuery dto.CreateOrderRe
 		RestaurantId: createOrderQuery.MenuItemList[0].RestaurantId,
 	})
 
-	return order
+	return order, nil
 }
 
 func (orderService *OrderService) GetOrderById(orderId uint32) *model.Order {
